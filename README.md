@@ -44,6 +44,7 @@ Prerequisites
 1. Download the WikiMEL and WikiDiverse datasets
 2. Place the data in the data/ directory following the structure:
 
+
 data/
 ├── wikimel/
 │   ├── train.json
