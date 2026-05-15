@@ -1,47 +1,73 @@
 run_name: wikidiverse
 seed: 42
-code_path: "/home/xxx/code/mel/rcmel-my/"
-llm: "/home/xxx/code/models/Llama-3.1-8B-Instruct"
-mllm: "/home/xxx/code/models/llava-v1.6-mistral-7b-hf"
-embedding_model: "/home/xxx/code/models/SFR-Embedding-Mistral"
+code_path: ""
+llm: "/home/xxx/models/meta-llama/Llama-3.1-8B-Instruct"
+mllm: "/home/xxx/models/llava-hf/llava-v1.6-mistral-7b-hf"
+embedding_model: "/home/xxx/models/Salesforce/SFR-Embedding-Mistral"
+
+vllm:
+  api_key: "EMPTY"
+  startup_timeout: 600
+  save_every: 500
+  gpus: [5, 4, 3, 2]
+  tensor_parallel_size: 1
+  workers: 20
+  mllm:
+    model: "/home/xxx/models/llava-hf/llava-v1.6-mistral-7b-hf"
+    base_port: 34000
+    max_model_len: 32000
+  llm:
+    model: "/home/xxx/models/meta-llama/Llama-3.1-8B-Instruct"
+    base_port: 33000
+    max_model_len: 32000
 
 ent:
-  entity_data_dir: "data/wikidiverse/kb_entity_filtered.json"
-  entity_image_dir: "data/wikidiverse/kb_image/"
+  entity_data_dir: "data/WikiDiverse/kb_entity_filtered.json"
+  entity_image_dir: "data/WikiDiverse/kb_image/"
 
-  # 实体增强step by step
-  entity_output_dir_mllm: "data/wikidiverse/kb_entity_filtered_desc_mllm.json"
-  entity_output_dir_mllm_llm: "data/wikidiverse/kb_entity_filtered_desc_mllm_llm.json"
+  entity_output_dir_mllm: "data/WikiDiverse/kb_entity_filtered_desc_mllm.json"
+  entity_output_dir_mllm_llm: "data/WikiDiverse/kb_entity_filtered_desc_mllm_llm.json"
 
 mention:
-  mention_data_dir: "data/wikidiverse/wikidiverse_test_1.json"
-  mention_image_dir: "data/wikidiverse/mention_image/"
-  # 提及增强多卡多步
-  mention_output_dir_mllm: "data/wikidiverse/wikidiverse_test_1_mllm.json"
-  mention_output_dir_mllm_llm: "data/wikidiverse/wikidiverse_test_1_mllm_llm.json"
+  mention_data_dir: "data/WikiDiverse/wiki_diverse_test_1.json"
+  mention_image_dir: "data/WikiDiverse/mention_image/"
+
+  mention_output_dir_mllm: "data/WikiDiverse/wiki_diverse_test_1_mllm.json"
+  mention_output_dir_mllm_llm: "data/WikiDiverse/wiki_diverse_test_1_mllm_llm.json"
 
 embed:
   max_length: 4096
+  batch_size: 8
   top_k: 30
-  entity_embedding_dir: "data/wikidiverse/kb_entity_filtered_desc_mllm_llm.json"
-  entity_embedding_output_dir: "data/wikidiverse/kb_entity_filtered_desc_mllm_llm_embedding.pt"
+  entity_embedding_dir: "data/WikiDiverse/kb_entity_filtered_desc_mllm_llm.json"
+  entity_embedding_output_dir: "data/WikiDiverse/kb_entity_filtered_desc_mllm_llm_embedding.pt"
 
-  mention_embedding_dir: "data/wikidiverse/wikidiverse_test_1_mllm_llm_embedding.json"
-  mention_embedding_output_dir: "data/wikidiverse/wikidiverse_test_1_mllm_llm_embedding.json"
+  mention_embedding_dir: "data/WikiDiverse/wiki_diverse_test_1_mllm_llm.json"
+  mention_embedding_output_dir: "data/WikiDiverse/wiki_diverse_test_1_mllm_llm_embedding.pt"
 
-  
 top:
-  mention_rank_output_dir: "data/wikidiverse/wikidiverse_test_1_mllm_llm_embedding_rank.json"
-  entity_dir: "data/wikidiverse/kb_entity_filtered_desc_mllm_llm.json"
-  entity_embed_name: "data/wikidiverse/kb_entity_filtered_desc_mllm_llm_embedding_name.pt"
-  entity_embed_name_desc: "data/wikidiverse/kb_entity_filtered_desc_mllm_llm_embedding_name_desc.pt"
+  coarse_k: 100
+  rerank_k: 30
+  batch_size: 64
+  mention_rank_output_dir: "data/WikiDiverse/wiki_diverse_test_1_mllm_llm_embedding_rank.json"
+  entity_dir: "data/WikiDiverse/kb_entity_filtered_desc_mllm_llm.json"
+  entity_embed_name: "data/WikiDiverse/kb_entity_filtered_desc_mllm_llm_embedding_name.pt"
+  entity_embed_name_desc: "data/WikiDiverse/kb_entity_filtered_desc_mllm_llm_embedding_name_desc.pt"
 
 infer_kc:
-  mention_rank_input_dir: "data/wikidiverse/wikidiverse_test_1_mllm_llm_embedding_rank.json"
-  entity_desc_llm_mllm_dir: "data/wikidiverse/kb_entity_filtered_desc_mllm_llm.json"
-  mention_infer_kc: "data/wikidiverse/wikidiverse_test_1_mllm_llm_embedding_rank_kc.json"
+  candidate_k: 10
+  mention_rank_input_dir: "data/WikiDiverse/wiki_diverse_test_1_mllm_llm_embedding_rank.json"
+  mention_rank_top10_input_dir: "data/WikiDiverse/wiki_diverse_test_1_mllm_llm_embedding_rank_top10.json"
+  entity_desc_llm_mllm_dir: "data/WikiDiverse/kb_entity_filtered_desc_mllm_llm.json"
+  mention_infer_kc: "data/WikiDiverse/wiki_diverse_test_1_mllm_llm_embedding_rank_kc.json"
 
 decoding:
-  mention_entity_diff_dir: "data/wikidiverse/wikidiverse_test_1_mllm_llm_embedding_rank_kc.json" 
-  result: "data/wikidiverse/result.json"
-  m: 30
+  provider: ""
+  model: ""
+  base_url: ""
+  api_key: ""
+  workers: 8
+  use_multigpu: true
+  mention_entity_diff_dir: "data/WikiDiverse/wiki_diverse_test_1_mllm_llm_embedding_rank_kc.json"
+  result: "data/WikiDiverse/result.json"
+  m: 10

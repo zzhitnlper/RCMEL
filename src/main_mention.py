@@ -1,23 +1,55 @@
+import sys
+from pathlib import Path
+
 from omegaconf import OmegaConf
-import os,sys
-# 实体增强
-from mention_aug import mention_aug_multigpu_mllm, mention_aug_multigpu_llm,mention_aug_multigpu,mention_aug_onegpu
-# 设置使用的显卡序号（例如使用第 0 号显卡）
-os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2"
+
+from entity_aug import start_vllm_stage, stop_vllm_servers
+from mention_aug import mention_aug_parallel_llm, mention_aug_parallel_mllm
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
 def setup_parser(config_path):
-    return OmegaConf.load(config_path)
+    return OmegaConf.load(str(config_path))
+
+
+def resolve_config_path(argv: list[str]) -> Path:
+    if len(argv) <= 1:
+        return REPO_ROOT / "config" / "wikidiverse.yaml"
+
+    raw_arg = argv[1]
+    raw_path = Path(raw_arg)
+
+    if raw_path.suffix in {".yaml", ".yml"}:
+        if raw_path.is_absolute():
+            return raw_path
+        return REPO_ROOT / raw_path
+
+    return REPO_ROOT / "config" / f"{raw_arg}.yaml"
+
 
 if __name__ == "__main__":
-    # dataset="wikidiverse"
-    dataset = sys.argv[1]
-    config_path = f"/home/xxx/code/mel/rcmel-my/config/{dataset}.yaml"
+    config_path = resolve_config_path(sys.argv)
     args = setup_parser(config_path)
-    # 提及增强
-    # mention_aug_onegpu(args)# 单gpu
-    # # mention_aug_multigpu(args)# 多gpu
-    mention_aug_multigpu_mllm(args)
-    mention_aug_multigpu_llm(args)
-    # 计算并保存检索
-    
-    # 获取top-K
-    # LLM问答
+
+    print("[Main] Mention augmentation pipeline started.")
+    print("[Main] Stage 1/2: Starting MLLM services...")
+    mllm_handles, mllm_endpoints = start_vllm_stage(args, "mllm")
+    try:
+        print("[Main] MLLM services are ready. Starting mention augmentation.")
+        mention_aug_parallel_mllm(args, mllm_endpoints)
+    finally:
+        stop_vllm_servers(mllm_handles)
+
+    print("[Main] MLLM mention augmentation completed.")
+    print("[Main] Stage 2/2: Starting LLM services...")
+
+    llm_handles, llm_endpoints = start_vllm_stage(args, "llm")
+    try:
+        print("[Main] LLM services are ready. Starting mention information refinement.")
+        mention_aug_parallel_llm(args, llm_endpoints)
+    finally:
+        stop_vllm_servers(llm_handles)
+
+    print("[Main] LLM mention information refinement completed.")
+    print("[Main] Mention augmentation pipeline finished.")

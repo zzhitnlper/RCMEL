@@ -1,14 +1,47 @@
+import sys
+from pathlib import Path
+
 from omegaconf import OmegaConf
-import os,sys
-from infer import infer_kc_multigpu,infer_kc_onegpu
-os.environ["CUDA_VISIBLE_DEVICES"]="0,1,2"
-def setup_parser(config_path):
-    return OmegaConf.load(config_path)
+
+from entity_aug import start_vllm_stage, stop_vllm_servers
+from infer import infer_kc_multigpu, infer_kc_onegpu
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def setup_parser(config_path: Path):
+    return OmegaConf.load(str(config_path))
+
+
+def resolve_config_path(argv: list[str]) -> Path:
+    if len(argv) <= 1:
+        return REPO_ROOT / "config" / "wikidiverse.yaml"
+
+    raw_arg = argv[1]
+    raw_path = Path(raw_arg)
+
+    if raw_path.suffix in {".yaml", ".yml"}:
+        if raw_path.is_absolute():
+            return raw_path
+        return REPO_ROOT / raw_path
+
+    return REPO_ROOT / "config" / f"{raw_arg}.yaml"
+
 
 if __name__ == "__main__":
-    # dataset="RichpediaMEL"
-    dataset = sys.argv[1]
-    config_path = f"/home/xxx/code/mel/rcmel-my/config/{dataset}.yaml"
+    config_path = resolve_config_path(sys.argv)
     args = setup_parser(config_path)
-    infer_kc_multigpu(args)
-    # infer_kc_onegpu(args)
+
+    print("[Main] Knowledge contrast pipeline started.")
+    print("[Main] Stage 1/1: Starting LLM services...")
+    llm_handles, llm_endpoints = start_vllm_stage(args, "llm")
+    try:
+        print("[Main] LLM services are ready. Starting knowledge contrast generation.")
+        if getattr(args.infer_kc, "use_multigpu", True):
+            infer_kc_multigpu(args, llm_endpoints)
+        else:
+            infer_kc_onegpu(args)
+    finally:
+        stop_vllm_servers(llm_handles)
+
+    print("[Main] Knowledge contrast pipeline finished.")

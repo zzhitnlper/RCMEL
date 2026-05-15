@@ -1,7 +1,5 @@
-dataset="wikidiverse"
-# python main_entity.py "$dataset"
-# python main_mention.py "$dataset"
-# python main_top.py "$dataset"
-# python main_infer.py "$dataset"
-python main_decoding.py "$dataset"
-# python metric.py "$dataset"
+python main_entity.py
+python main_mention.py
+python main_top.py
+python main_infer.py
+python main_decoding.py
